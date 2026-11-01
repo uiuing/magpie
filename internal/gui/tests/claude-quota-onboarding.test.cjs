@@ -14,7 +14,7 @@ const user = "current@example.invalid", other = "saved@example.invalid";
 // The error returned by the reporter's running gateway, without the
 // terminal's security-note text after the identifying prefix.
 const error = "Claude Code: claude-tui: Claude Code's interactive mode shows its first-run notes, its onboarding not done: Security notes:";
-const advice = "Finish Claude Code's first-run setup, then refresh. Run magpie claude-code to find the executable to open.";
+const advice = "Finish Claude Code's first-run setup, then refresh. Run magpie claude-code to find its executable.";
 const provider = { id: "claude", name: "Claude Code", icon: "claude", models: [], agents: [], key: {},
   account: { agent: "claude", agentName: "Claude Code", user, logins: [
     { user, plan: "pro", active: true, on: true }, { user: other, plan: "pro", active: false, on: true },

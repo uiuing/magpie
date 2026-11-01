@@ -13546,7 +13546,7 @@ function loginUsageOf(agent) {
 const SIGN_IN_GONE = /sign-in has (expired|lapsed)|sign in again/i;
 
 function quotaError(err, q) {
-  if (/^Claude Code: claude-tui: Claude Code's interactive mode shows its first-run notes, its onboarding not done:/.test(err)) return t("Finish Claude Code's first-run setup, then refresh. Run magpie claude-code to find the executable to open.");
+  if (/^Claude Code: claude-tui: Claude Code's interactive mode shows its first-run notes, its onboarding not done:/.test(err)) return t("Finish Claude Code's first-run setup, then refresh. Run magpie claude-code to find its executable.");
   // signed in again in place, settings kept, from the row's Sign in again
   // (blue12345655 on Discord looked for a way to add it again, found none)
   if (/sign-in has expired/.test(err)) return t("Signed out — choose Sign in again on this account under Providers");
@@ -18294,7 +18294,7 @@ function quotaRefresh(q, then) {
     const began = quotaRefreshVersion;
     try {
       const qs = await api("usage/quotas/refresh?provider=" + encodeURIComponent(q.provider) + (q.user ? "&user=" + encodeURIComponent(q.user) : ""), {});
-      const fresh = Array.isArray(qs) && qs.find(x => usageAcctKey(x) === key);
+      let fresh = Array.isArray(qs) && qs.find(x => usageAcctKey(x) === key);
       if (fresh) {
         quotaRefreshVersions.set(key, ++quotaRefreshVersion);
         // The reply includes every card, but only this one was refreshed.
@@ -18314,6 +18314,7 @@ function quotaRefresh(q, then) {
         }
         if (!placed) next.push(...replacement);
         quotas = keepRefreshedQuotas(next, began); quotasAt = Date.now();
+        fresh = !q.user && replacement.find(x => x.error && quotas.includes(x));
         // Protect the new identities and the old keys they replaced, so a
         // pending GET can neither erase the new cards nor restore the old.
         const version = ++quotaRefreshVersion;
