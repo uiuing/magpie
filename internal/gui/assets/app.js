@@ -13546,6 +13546,7 @@ function loginUsageOf(agent) {
 const SIGN_IN_GONE = /sign-in has (expired|lapsed)|sign in again/i;
 
 function quotaError(err, q) {
+  if (/^Claude Code: claude-tui: Claude Code's interactive mode shows its first-run notes, its onboarding not done:/.test(err)) return t("Finish Claude Code's first-run setup, then refresh. Run magpie claude-code to find the executable to open.");
   // signed in again in place, settings kept, from the row's Sign in again
   // (blue12345655 on Discord looked for a way to add it again, found none)
   if (/sign-in has expired/.test(err)) return t("Signed out — choose Sign in again on this account under Providers");
@@ -18319,6 +18320,7 @@ function quotaRefresh(q, then) {
         for (const x of [q, ...before, ...quotas]) if (belongs(x)) quotaRefreshVersions.set(usageAcctKey(x), version);
       }
       if (then) await then();
+      if (fresh?.error) status(quotaError(fresh.error, fresh), "err");
     } catch (err) {
       statusErr(err);
     } finally {

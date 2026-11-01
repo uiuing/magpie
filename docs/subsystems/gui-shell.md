@@ -70,6 +70,18 @@ languages, at 440 and 360px.
 Redrawing the cards preserves their refresh controls and any running turn.
 The reply updates the reading immediately; the icon then finishes its
 current full turn before stopping (no rotation under reduced motion).
+A manual refresh whose HTTP reply succeeds but whose requested card has
+an error reports that error through the status line too (#4817), including
+when the card already showed it. Errors on other cards in the reply do
+not become the requested account's error. Claude's incomplete interactive
+setup is said on the editor row, Usage card, tray card and refresh notice:
+finish Claude Code's first-run setup, then refresh; `magpie claude-code`
+names the executable, including a build magpie downloaded. The original
+error stays in the card's tooltip. No setup is accepted on the user's
+behalf, and the read never falls back to `-p`.
+`claude-quota-onboarding.test.cjs` presses the active account's button in
+both engines and all five languages, with an account error in a successful
+HTTP reply, then a successful read after setup and an unrelated card error.
 
 ### Streamed output speed
 
