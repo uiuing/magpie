@@ -42,17 +42,38 @@ func trayIconFigure(goos string, noNumber bool, cells []trayCell) string {
 // first row of the first cell whose first row is a percentage, its digits
 // alone ("42% +3%" is "42"); "" when no cell has one.
 func trayFigure(cells []trayCell) string {
-	for _, c := range cells {
+	_, figure := trayFigureCell(cells)
+	return figure
+}
+
+func trayFigureCell(cells []trayCell) (int, string) {
+	for i, c := range cells {
 		if len(c.Rows) == 0 {
 			continue
 		}
 		r, _, _ := strings.Cut(strings.TrimSpace(c.Rows[0]), " ")
 		n, ok := strings.CutSuffix(r, "%")
 		if ok && n != "" && len(n) <= 3 && strings.Trim(n, "0123456789") == "" {
-			return n
+			return i, n
 		}
 	}
-	return ""
+	return -1, ""
+}
+
+// trayFigureTip puts the displayed aggregate first: Windows truncates the
+// tooltip at 127 UTF-16 units, so a preceding balance must not hide its state.
+func trayFigureTip(cells []trayCell, tip string) string {
+	i, _ := trayFigureCell(cells)
+	if i < 0 || !strings.HasPrefix(cells[i].ID, trayAll) || cells[i].Tip == "" {
+		return tip
+	}
+	first := cells[i].Tip
+	before, after, _ := strings.Cut(tip, first)
+	rest := strings.TrimSpace(strings.TrimSpace(before) + "\n\n" + strings.TrimSpace(after))
+	if rest == "" {
+		return first
+	}
+	return first + "\n\n" + rest
 }
 
 // Taskbar text colours: white on a dark taskbar, near black on a light

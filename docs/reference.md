@@ -2562,7 +2562,12 @@ panel's only: routing, caps, the Usage page and the menu bar's own cells
 still have it, and a menu bar cell for it still opens its card. Both are
 kept in magpie's settings (`usageOrder`, `panelUsageHidden`). Which
 allowances the menu bar itself shows beside its icon is picked in Settings.
-The same list has *Tokens and cost today* and *Tokens and cost, last 7
+A subscription whose accounts are all on one plan, two or more of them
+read, also has *All N accounts* there: one cell for them together, the
+figures of the strip above its accounts in the panel
+(`all:<provider>|<plan>` in `trayUsages`). An account that couldn't be read
+is left out of them, and the cell's tooltip says so; clicked, the cell
+opens the panel at that strip. The same list has *Tokens and cost today* and *Tokens and cost, last 7
 days*: every agent's requests as the Usage page's Requests tab sums them,
 the agents' own session-file calls among them, all their tokens (input,
 output and cache, marked Σ) over the cost in your currency (`usage:today`,

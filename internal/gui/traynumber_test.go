@@ -7,8 +7,10 @@ import (
 	"image"
 	"image/color"
 	"image/png"
+	"strings"
 	"testing"
 	"time"
+	"unicode/utf16"
 )
 
 // Windows' tray icon is the first card's figure (Benjaminliang_1 on X),
@@ -40,10 +42,39 @@ func TestTrayIconFigure(t *testing.T) {
 		{"the Mac draws its cells", "darwin", false, view([]string{"claude|a@b.c"}, false, nil), ""},
 		{"Linux shows the label", "linux", false, view([]string{"claude|a@b.c"}, false, nil), ""},
 		{"with Pace beside it", "windows", false, []trayCell{{Rows: []string{"42% +3%"}}}, "42"},
+		{"an aggregate with unread accounts", "windows", false, []trayCell{{ID: "all:claude|pro", Rows: []string{"70%"}}}, "70"},
+		{"unavailable plan readings", "windows", false, []trayCell{{ID: "all:claude|pro", Rows: []string{"—"}}}, ""},
 		{"a balance's own text", "windows", false, []trayCell{{Rows: []string{"1234%x"}}, {Rows: []string{"Σ1.2M"}}}, ""},
 	} {
 		if got := trayIconFigure(tc.goos, tc.noNumber, tc.cells); got != tc.want {
 			t.Errorf("%s: %q, want %q", tc.name, got, tc.want)
+		}
+	}
+}
+
+// The icon's figure can be a plan's accounts together after a balance or
+// a ledger card: its tooltip comes first, so what it says of accounts left
+// out or read earlier is within what Windows shows of a tooltip (127
+// UTF-16 units), with or without logos.
+func TestTrayFigureKeepsAggregateStatus(t *testing.T) {
+	for _, status := range []string{"Some accounts not counted", "Includes earlier readings"} {
+		first := strings.Repeat("账", 150)
+		allTip := "Plan · All 2 accounts\n" + status + "\n5 hours: 30%"
+		last := "Claude Code\n5 hours 10% used"
+		cells := []trayCell{{ID: "usage:today", Rows: []string{"Σ1M"}, Tip: first}, {ID: "all:plan", Rows: []string{"30%"}, Tip: allTip}, {ID: "claude|a", Rows: []string{"10%"}, Tip: last}}
+		for _, view := range [][]trayCell{cells, trayPlain(cells)} {
+			if trayFigure(view) != "30" {
+				t.Fatal("aggregate's numeric icon disappeared")
+			}
+			tip := trayFigureTip(view, first+"\n\n"+allTip+"\n\n"+last)
+			if want := allTip + "\n\n" + first + "\n\n" + last; tip != want {
+				t.Fatalf("the others' tips moved or left a gap: %q", tip)
+			}
+			u := utf16.Encode([]rune(tip))
+			short := string(utf16.Decode(u[:min(len(u), 127)]))
+			if !strings.Contains(short, status) || !strings.Contains(short, "30%") || strings.Count(tip, allTip) != 1 {
+				t.Fatalf("the icon lost its explanation: %q", short)
+			}
 		}
 	}
 }

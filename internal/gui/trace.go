@@ -274,6 +274,9 @@ func quotaView(id string) string {
 		// what the total does (trayTotalSum)
 		return "usage&tab=requests&period=" + string(p)
 	}
+	if scope, all := strings.CutPrefix(id, trayAll); all {
+		id, _, _ = strings.Cut(scope, "|")
+	}
 	provider, _, hasAccount := strings.Cut(id, "|")
 	if mainName.MatchString(provider) {
 		view += "&provider=" + url.QueryEscape(provider)

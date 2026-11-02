@@ -264,10 +264,11 @@ func trayUsageText(q provider.SubscriptionQuota, now time.Time, left, pace bool)
 // has them all. The tooltip's own words are in lang (trayLang), as the
 // tray menu's are, and so are a window's name and unit where the page has
 // a word for them, as its card says them (pageWord); an error is the
-// card's.
+// card's. A total's card and a plan's accounts together (trayAllCard) come
+// with their rows and tooltip made.
 func trayCardText(lang string, q provider.SubscriptionQuota, now time.Time, left, pace bool, kinds []string) (label, tip string) {
-	if strings.HasPrefix(q.Provider, trayTotal) {
-		return q.Balance, q.Name // trayTotalCard's: its rows, and its tooltip
+	if strings.HasPrefix(q.Provider, trayTotal) || strings.HasPrefix(q.Provider, trayAll) {
+		return q.Balance, q.Name // their rows, and their tooltip
 	}
 	q.Name = trayName(q)
 	if q.Error != "" {
@@ -385,10 +386,12 @@ func until(lang string, d time.Duration) string {
 }
 
 // trayUsageCards are the cards settings.TrayUsages names, in its order,
-// among the Usage page's (cached as there), and magpie's own totals it
-// names (trayTotal); one gone is left out. The vendors aren't asked when
-// only totals are named.
-func trayUsageCards(ctx context.Context, lang string, ids []string) []provider.SubscriptionQuota {
+// among the Usage page's (cached as there), magpie's own totals it names
+// (trayTotal) and a plan's accounts together (trayAll, from the same
+// cards); one gone is left out. The vendors aren't asked when only totals
+// are named.
+func trayUsageCards(ctx context.Context, lang string, s settings.Settings) []provider.SubscriptionQuota {
+	ids := s.TrayUsages
 	if len(ids) == 0 {
 		return nil
 	}
@@ -410,7 +413,20 @@ func trayUsageCards(ctx context.Context, lang string, ids []string) []provider.S
 		}
 		cards = append(cards, trayTotalCard(lang, id, trayMoney(trayTotalSum(p), noCost), currency, rate))
 	}
-	return trayPick(cards, ids, time.Now())
+	now := time.Now()
+	return trayPick(withTrayAll(cards, s, now), ids, now)
+}
+
+// withTrayAll is cards with a card for each plan's accounts together that
+// settings.TrayUsages names (trayAll), made from the cards before it: an
+// empty one where the plan has no such card now, which trayPick leaves out.
+func withTrayAll(cards []provider.SubscriptionQuota, s settings.Settings, now time.Time) []provider.SubscriptionQuota {
+	for _, id := range s.TrayUsages {
+		if scope, ok := strings.CutPrefix(id, trayAll); ok {
+			cards = append(cards, trayAllCard(cards, scope, now, s))
+		}
+	}
+	return cards
 }
 
 // trayTotal starts the id of a card of magpie's own count instead of a
@@ -588,7 +604,7 @@ func trayCount(n int) string {
 func trayPick(cards []provider.SubscriptionQuota, ids []string, now time.Time) []provider.SubscriptionQuota {
 	var out []provider.SubscriptionQuota
 	for _, id := range ids {
-		if pid, ok := strings.CutSuffix(id, trayInUse); ok {
+		if pid, ok := strings.CutSuffix(id, trayInUse); ok && !strings.HasPrefix(id, trayAll) {
 			if q, ok := trayInUseCard(cards, pid, now); ok {
 				out = append(out, q)
 			}
@@ -682,6 +698,7 @@ type trayCell struct {
 	Letter string // drawn in its place when there is no logo, or it can't be read
 	Plain  bool   // no logo nor letter, as Settings says: the rows alone, a line before
 	Rows   []string
+	Tip    string // the card's explanation, kept beside Windows' chosen figure
 }
 
 // trayPlain are the cells without their logos (settings.TrayNoLogos):
@@ -689,7 +706,7 @@ type trayCell struct {
 func trayPlain(cells []trayCell) []trayCell {
 	out := make([]trayCell, len(cells))
 	for i, c := range cells {
-		out[i] = trayCell{ID: c.ID, Plain: true, Rows: c.Rows}
+		out[i] = trayCell{ID: c.ID, Plain: true, Rows: c.Rows, Tip: c.Tip}
 	}
 	return out
 }
@@ -715,7 +732,7 @@ func trayCardsView(lang string, cards []provider.SubscriptionQuota, now time.Tim
 			continue
 		}
 		labels = append(labels, l)
-		c := trayCell{ID: trayCardID(q), Rows: strings.Split(l, " · ")}
+		c := trayCell{ID: trayCardID(q), Rows: strings.Split(l, " · "), Tip: t}
 		for i, r := range c.Rows {
 			c.Rows[i] = trayRow(r)
 		}

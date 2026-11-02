@@ -1,0 +1,57 @@
+[
+  {"name":"one account","provider":"codex","plan":"pro","show":false,"cards":[
+    {"user":"a","plan":"pro","windows":[{"name":"5 hours","used":30}]}
+  ]},
+  {"name":"free and pro","provider":"codex","plan":"pro","show":false,"cards":[
+    {"user":"a","plan":"free","windows":[{"name":"5 hours","used":20}]},
+    {"user":"b","plan":"pro","windows":[{"name":"5 hours","used":30}]}
+  ]},
+  {"name":"a repeated plan beside another plan","provider":"codex","plan":"pro","show":false,"cards":[
+    {"user":"a","plan":"pro","windows":[{"name":"5 hours","used":20}]},
+    {"user":"b","plan":"pro","windows":[{"name":"5 hours","used":30}]},
+    {"user":"c","plan":"free","windows":[{"name":"5 hours","used":40}]}
+  ]},
+  {"name":"counted windows on one plan","provider":"copilot","plan":"Business","show":true,"figure":"27%","cards":[
+    {"user":"a","plan":"Business","windows":[{"name":"Premium requests","amount":200,"limit":1000,"unit":"requests"}]},
+    {"user":"b","plan":"Business","windows":[{"name":"Premium requests","amount":150,"limit":300,"unit":"requests"}]}
+  ]},
+  {"name":"one readable account","provider":"gemini","plan":"Google AI Pro","show":false,"cards":[
+    {"user":"a","plan":"Google AI Pro","windows":[{"name":"Gemini Pro","used":20}]},
+    {"user":"b","plan":"Google AI Pro","error":"offline","windows":[]}
+  ]},
+  {"name":"an unread account with no plan is one of the plan's","provider":"codex","plan":"plus","show":true,"figure":"40%","members":3,"cards":[
+    {"user":"a","plan":"plus","windows":[{"name":"5 hours","used":30}]},
+    {"user":"b","plan":"plus","windows":[{"name":"5 hours","used":50}]},
+    {"user":"c","error":"token expired","windows":[]}
+  ]},
+  {"name":"no shared window","provider":"fakeco","plan":"Pro","show":false,"cards":[
+    {"user":"a","plan":"Pro","windows":[{"name":"Daily","used":20}]},
+    {"user":"b","plan":"Pro","windows":[{"name":"Weekly","used":30}]}
+  ]},
+  {"name":"one expired reading of a shared window","provider":"codex","plan":"pro","show":false,"cards":[
+    {"user":"a","plan":"pro","windows":[{"name":"5 hours","used":20,"resetsAt":"2026-11-02T13:00:00Z"}]},
+    {"user":"b","plan":"pro","asOf":"2026-11-02T10:00:00Z","windows":[{"name":"5 hours","used":90,"resetsAt":"2026-11-02T11:00:00Z"}]}
+  ]},
+  {"name":"unknown plan beside a known plan","provider":"minimax-plan","plan":"Pro","show":false,"cards":[
+    {"user":"a","plan":"Pro","windows":[{"name":"Monthly","used":20}]},
+    {"user":"b","windows":[{"name":"Monthly","used":30}]}
+  ]},
+  {"name":"a separate wallet is not another plan","provider":"zhipu-plan","plan":"Pro","show":true,"figure":"40%","cards":[
+    {"user":"a","kind":"plan","plan":"Pro","windows":[{"name":"5 hours","used":30}]},
+    {"user":"b","kind":"plan","plan":"Pro","windows":[{"name":"5 hours","used":50}]},
+    {"user":"a","kind":"balance","error":"offline","windows":[]}
+  ]},
+  {"name":"balance-only cards are outside the allowance group","provider":"fakeco","plan":"Pro","show":true,"figure":"40%","members":2,"cards":[
+    {"user":"a","plan":"Pro","windows":[{"name":"Weekly","used":30}]},
+    {"user":"b","plan":"Pro","windows":[{"name":"Weekly","used":50}]},
+    {"user":"c","kind":"plan","plan":"Pro","balance":"$10","windows":[]}
+  ]},
+  {"name":"two keys of one name are two accounts","provider":"relay","plan":"Pro","show":true,"figure":"20%","members":2,"cards":[
+    {"user":"main","kind":"plan","plan":"Pro","windows":[{"name":"Weekly","used":10}]},
+    {"user":"main","kind":"plan","plan":"Pro","windows":[{"name":"Weekly","used":30}]}
+  ]},
+  {"name":"balance windows","provider":"fakeco","plan":"Pro","show":true,"figure":"30 USD","cards":[
+    {"user":"a","plan":"Pro","windows":[{"name":"Credits","balance":10,"unit":"USD"}]},
+    {"user":"b","plan":"Pro","windows":[{"name":"Credits","balance":20,"unit":"USD"}]}
+  ]}
+]

@@ -14278,7 +14278,7 @@ function ringName(w) {
 
 // quotaall.js: accounts together, loaded once asked for
 function quotaAllJS() {
-  return (quotaAllJS.p ||= import("./quotaall.js").then(() => renderQuotas(), () => {}));
+  return (quotaAllJS.p ||= import("./quotaall.js").then(() => renderQuotas(), () => {}).finally(() => { quotaAllJS.ready = true; }));
 }
 const quotaAllOf = (...a) => window.quotaAll ? quotaAll(...a) : void quotaAllJS();
 // tiersText: a family's windows, one a line, for its tooltip.
@@ -16918,10 +16918,11 @@ function flashCard(card, target = card, elapsed = 0) {
 // to its replacement, preserving scroll position and the remaining duration.
 function keepQuotaFlash(box) {
   const view = box.closest(".view"), scroll = view?.scrollTop;
-  const flashes = [...box.querySelectorAll(".subscription-card.flash, .pq-card.flash")].flatMap((card) => {
+  const flashes = [...box.querySelectorAll(".subscription-card.flash, .pq-card.flash, .quota-all.flash")].flatMap((card) => {
     const animation = card.getAnimations().find((a) => a.animationName === "flash");
     if (!animation) return [];
     const selector = card.matches(".pq-card") ? `.pq-card[data-card="${CSS.escape(card.dataset.card)}"]`
+      : card.matches(".quota-all") ? `[data-provider="${CSS.escape(card.closest("[data-provider]").dataset.provider)}"] .quota-all`
       : `.subscription-card[data-provider="${CSS.escape(card.dataset.provider)}"]`;
     return [{ selector, elapsed: animation.currentTime || 0 }];
   });
@@ -16941,12 +16942,20 @@ function keepQuotaFlash(box) {
 function focusQuotaCard() {
   if (!quotaFocus) return;
   if (performance.now() > quotaFocusUntil) { quotaFocus = ""; return; }
+  // A plan's accounts together: the click is for its strip (quotaAll), which
+  // loads late, as do those above it. Wait for them before spending the
+  // click; a user scroll still cancels it.
+  const all = quotaFocus.startsWith(ALL_ACCOUNTS);
+  if (all && quotaAllJS.p && !quotaAllJS.ready) { quotaAllJS.p.then(() => requestAnimationFrame(focusQuotaCard)); return; }
   const box = mode === "panel" ? $("#panelQuota") : $("#subscriptionUsage");
   if (mode === "panel") setPanelTab("usage");
   else if (view !== "usage" || magpie.call("usage", "tab") !== "usage") return;
-  const id = CSS.escape(quotaFocus);
-  // a key's balance shown on its plan's card (keyCards): that card
-  const target = box.querySelector(`[data-card="${id}"]`) || box.querySelector(`[data-bal-card="${id}"]`) || box.querySelector(`[data-provider="${id}"]`);
+  const id = CSS.escape(all ? trayProvider(quotaFocus) : quotaFocus);
+  const found = all ? box.querySelector(`[data-provider="${id}"]`)
+    : box.querySelector(`[data-card="${id}"]`) || box.querySelector(`[data-bal-card="${id}"]`) || box.querySelector(`[data-provider="${id}"]`);
+  // A group has no edge of its own to light: its strip, or with none, as when
+  // a read failed since the cell was drawn, its first card.
+  const target = found?.matches(".pq-group") ? found.querySelector(".quota-all, .pq-card") : found;
   // The panel omits accounts in brief; the main window draws them short.
   // The one asked for is opened in full.
   const quota = quotas?.find((q) => trayCardID(q) === quotaFocus);
@@ -16959,7 +16968,7 @@ function focusQuotaCard() {
     return;
   }
   quotaFocus = "";
-  flashCard(target.closest(".subscription-card, .pq-card"), target);
+  flashCard(target.closest(".quota-all, .subscription-card, .pq-card"), target);
 }
 
 // Go calls this when a menu-bar quota cell opens the panel.
@@ -17254,7 +17263,7 @@ function renderPanelQuota(lazy) {
   // what the arranging hid is left out, but for the one a menu bar cell
   // was clicked for
   const hidden = new Set(state.settings?.panelUsageHidden || []);
-  const peek = (q) => !!panelPeek && (trayCardID(q) === panelPeek || q.balanceCard === panelPeek || q.provider === panelPeek);
+  const peek = (q) => !!panelPeek && (trayCardID(q) === panelPeek || q.balanceCard === panelPeek || q.provider === panelPeek || panelPeek.startsWith(ALL_ACCOUNTS) && q.provider === trayProvider(panelPeek));
   const away = new Set(subs.filter((q) => hidden.has(q.provider) && !peek(q)).map((q) => q.provider));
   // the sections in order: a vendor's accounts, or a run of balances
   const parts = [], groups = new Map();
@@ -17275,6 +17284,7 @@ function renderPanelQuota(lazy) {
     if (part.bals) { box.append(panelBalances(part.bals)); continue; }
     const { name, qs } = part;
     const g = el("div", "pq-group");
+    g.dataset.provider = qs[0].provider;
     const head = el("div", "pq-gh");
     head.append(icon(qs[0].icon), el("span", "pq-gn", name));
     // several accounts: how many, a quiet count by the name; one: its plan
@@ -20448,6 +20458,8 @@ const trayCardID = (q) => q.user ? q.provider + "|" + q.user : q.provider;
 // IN_USE ends the id of a card that follows the subscription's account in
 // use, the one the gateway goes to first, rather than naming one
 const IN_USE = "|*";
+const ALL_ACCOUNTS = "all:";
+const trayProvider = (id) => id.replace(/^all:/, "").split("|")[0];
 
 // renderTrayUsage: the subscriptions and plans whose windows show beside
 // the tray icon, side by side. The cards are the Usage page's, asked for
@@ -20527,11 +20539,8 @@ function suffixed(name, by, own, mode = suffixMode()) {
   return name + " · " + by;
 }
 
-// the menu bar's menu waiting on the allowances: the pill drawn last opens
-// it, with what that drawing keeps. Opened at the pill a redraw took away
-// (another setting saved meanwhile), it came up in the window's corner and
-// saved the other setting back as it was.
-let trayUsageLoading = null;
+// The picker is loaded only in Settings; a late import uses its latest draw.
+let trayPickDraw = 0;
 function renderTrayUsage(s, keep) {
   $("#quotaLeftSegs").replaceChildren(segs([[false, t("Used")], [true, t("Left")]], !!s.quotaLeft,
     (on) => { if (on !== quotaLeft) setQuotaLeft(on); }));
@@ -20560,58 +20569,8 @@ function renderTrayUsage(s, keep) {
   $("#trayUsageSub").textContent = mac ? t("Show your subscriptions' allowances, or the tokens and cost of today or the last 7 days, beside magpie's icon in the menu bar, side by side, refreshed every few minutes")
     : t("Show your subscriptions' allowances, or the tokens and cost of today or the last 7 days, when pointing at magpie's tray icon, refreshed every few minutes");
   const ids = s.trayUsages || (s.trayUsage ? [s.trayUsage] : []);
-  const pill = el("button", "proto pick" + (ids.length ? " set" : ""));
-  pill.type = "button";
-  const paint = () => {
-    const card = (quotas || []).find((q) => trayCardID(q) === ids[0] || q.provider + IN_USE === ids[0]);
-    const total = TRAY_TOTALS.find(([v]) => v === ids[0]);
-    pill.replaceChildren(el("span", "", !ids.length ? t("Off")
-      : ids.length > 1 ? ids.some((id) => TRAY_TOTALS.some(([v]) => v === id)) ? t("{n} shown", { n: ids.length }) : t("{n} subscriptions", { n: ids.length })
-      : total ? t(total[1]) : card ? card.name : ids[0].split("|")[0]), svg(CHEV, 11, 1.6));
-  };
-  paint();
-  if (ids.length === 1 && !quotas) loadQuotas().then(paint);
-  const open = () => {
-    pill.classList.remove("busy");
-    paint();
-    if (!pill.isConnected) return;
-    // the Usage page's cards (keyCards): a key's plan and its balance are
-    // one, not two rows of one name ticked together (#1658, MizuIro-H). A
-    // balance left a card of its own (a stale stand-in) whose id another
-    // row has already is left out: the menu bar shows the first card of an
-    // id, so its row could only tick the other.
-    const cards = keyCards((quotas || []).filter((q) => !q.error && (q.windows?.length || q.balance)))
-      .filter((q, i, all) => all.findIndex((c) => trayCardID(c) === trayCardID(q)) === i);
-    const opts = [{ v: "", name: "Off", note: "" }];
-    for (const q of cards) {
-      // a subscription with several accounts: the one in use, whichever
-      // it is now, before each by name
-      if (q.user && !opts.some((o) => o.v === q.provider + IN_USE) && cards.filter((c) => c.provider === q.provider).length > 1)
-        opts.push({ v: q.provider + IN_USE, name: q.name, note: "Account in use" });
-      opts.push({ v: trayCardID(q), name: q.name, note: [q.plan, q.alias, q.user].filter(Boolean).join(" · ") });
-    }
-    // magpie's own count of every agent's requests, as the Usage page's
-    // Overview has it: tokens over cost (#1984)
-    for (const [v, name] of TRAY_TOTALS) opts.push({ v, name, note: "Every agent's, as the Usage page counts them" });
-    // one ticked that isn't there now (signed out, or not answering) stays
-    // to be unticked
-    for (const id of ids) if (!opts.some((o) => o.v === id)) opts.push({ v: id, name: id.split("|")[0], note: id.endsWith(IN_USE) ? "Account in use" : id.split("|")[1] || "" });
-    if (!cards.length) opts.push({ v: "\x00", name: "No subscriptions yet", note: "Sign in to one, or add a plan's key, and it shows on the Usage page" });
-    openProtoMenu(pill, opts, ids, (trayUsages) => savePrefs({ ...keep, trayUsages }), "Shown beside the icon");
-  };
-  pill.onclick = async (e) => {
-    e.stopPropagation();
-    if (pill.classList.contains("open")) return closeProtoMenu();
-    if (quotas) return open();
-    const loading = trayUsageLoading = { open };
-    pill.classList.add("busy");
-    await loadQuotas();
-    if (trayUsageLoading !== loading) return;
-    trayUsageLoading = null;
-    loading.open();
-  };
-  if (trayUsageLoading) { trayUsageLoading.open = open; pill.classList.add("busy"); }
-  $("#trayUsagePick").replaceChildren(pill);
+  const draw = ++trayPickDraw;
+  import("./traypick.js").then(() => { if (draw === trayPickDraw) renderTrayPick(s, keep, ids); }, settingsErr);
   // how often it is asked for again, and whether it reads as used or left —
   // the Usage page's choice too (#122)
   $("#trayEveryRow").hidden = !ids.length;

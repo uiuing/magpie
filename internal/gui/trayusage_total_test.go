@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/yetone/magpie/internal/sessions"
+	"github.com/yetone/magpie/internal/settings"
 	"github.com/yetone/magpie/internal/usage"
 )
 
@@ -26,7 +27,7 @@ func TestTrayTotals(t *testing.T) {
 
 	// a period the Usage page has no window for, or no total at all, is
 	// left out, as a card no longer there is
-	cards := trayUsageCards(context.Background(), "en", []string{"usage:7d", "usage:3d", "usage:", "usage:today"})
+	cards := trayUsageCards(context.Background(), "en", settings.Settings{TrayUsages: []string{"usage:7d", "usage:3d", "usage:", "usage:today"}})
 	if !slices.Equal(asked, []usage.Period{usage.Week, usage.Today}) {
 		t.Fatalf("summed %v, want 7d then today", asked)
 	}

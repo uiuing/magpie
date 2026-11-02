@@ -28,7 +28,7 @@ func TestTrayNoCost(t *testing.T) {
 	if err := settings.Save(settings.Settings{TrayUsages: ids}); err != nil {
 		t.Fatal(err)
 	}
-	_, label, _ := trayUsageView(trayUsageCards(context.Background(), "en", ids), time.Now(), false, false)
+	_, label, _ := trayUsageView(trayUsageCards(context.Background(), "en", settings.Load()), time.Now(), false, false)
 	if label != "Σ47M · $128 | Σ6.3M · $3.40+" {
 		t.Errorf("cost on: label %q", label)
 	}
@@ -36,7 +36,7 @@ func TestTrayNoCost(t *testing.T) {
 	if err := settings.Save(settings.Settings{TrayUsages: ids, TrayNoCost: true}); err != nil {
 		t.Fatal(err)
 	}
-	cells, label, tip := trayUsageView(trayUsageCards(context.Background(), "en", ids), time.Now(), false, false)
+	cells, label, tip := trayUsageView(trayUsageCards(context.Background(), "en", settings.Load()), time.Now(), false, false)
 	if label != "Σ47M | Σ6.3M" {
 		t.Errorf("cost off: label %q, want the tokens alone", label)
 	}

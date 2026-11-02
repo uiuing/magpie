@@ -1,8 +1,8 @@
 // A provider's accounts together (CryptoSarom on X: how much of a model is
 // left matters more than which account it is on). app.js imports this once
-// some provider has two accounts (quotaAllJS), and the Routing page once a
-// group's row says what its accounts have left, so it weighs nothing on
-// the core.
+// some provider has two accounts (quotaAllJS), Settings' menu bar picker
+// with it (traypick.js), and the Routing page once a group's row says what
+// its accounts have left, so it weighs nothing on the core.
 //
 // mergeQuotas: one provider's accounts as one figure a window. Only what
 // reads alike is put together: a counted window (WorkBuddy's credits) adds
@@ -26,7 +26,7 @@
 // head: "All 3 accounts", each window's figure and a thin bar, and how many
 // couldn't be read. Nothing when fewer than two accounts read, or nothing
 // of theirs adds up. No account is named in it (Hide accounts).
-function mergeQuotas(subs, now = Date.now()) {
+function mergeQuotas(subs, now = Date.now(), minimum = 2) {
   const read = subs.filter((q) => !q.error && (q.windows?.length || q.balance));
   const unknown = subs.length - read.length;
   const plans = new Set(read.map((q) => q.plan || ""));
@@ -52,7 +52,7 @@ function mergeQuotas(subs, now = Date.now()) {
   }
   const windows = [];
   for (const m of by.values()) {
-    if (m.n < 2) continue; // one account's is already below
+    if (m.n < minimum) continue; // one account's is already below
     if (m.kind === "u" && m.n < read.length) continue;
     const { w } = m;
     const out = { name: w.name, family: w.family, pool: w.pool, unit: w.unit, accounts: m.n, unknown: m.stale, held: m.held, how: m.kind[0] };
@@ -68,6 +68,27 @@ function mergeQuotas(subs, now = Date.now()) {
   }
   return { accounts: read.length, unknown, windows };
 }
+// quotaAccounts: the cards the tray panel's strip counts as a provider's
+// accounts (renderPanelQuota sets a balance alone apart): each with
+// windows, or whose read failed. Two keys of one name are two accounts.
+// The menu bar's choice and its cell (native trayAllAccounts) count these.
+function quotaAccounts(subs) {
+  return subs.filter((q) => q.windows?.length || q.error && !q.balance);
+}
+// The menu bar's choice of them (traypick.js) names one plan, so it needs
+// every account on that plan: one whose read failed before it said its plan
+// (Codex's expired token) is one of them, unread.
+function quotaAllSummary(subs, now = Date.now()) {
+  subs = quotaAccounts(subs);
+  const plans = new Set(subs.filter((q) => q.plan || !q.error).map((q) => q.plan));
+  const [plan] = plans;
+  if (subs.length < 2 || plans.size !== 1 || !plan) return null;
+  const all = mergeQuotas(subs, now);
+  return all.accounts > 1 && all.windows.length ? { ...all, plan, subs } : null;
+}
+function quotaAllHint() {
+  return t("These accounts' windows together: amounts of one unit are added up; a window said only as a share is the mean of the accounts on one plan, which have the same allowance. Each account is below.");
+}
 // quotaAll: the strip (above)
 function quotaAll(subs, cls = "", max = Infinity) {
   if (subs.length < 2) return null;
@@ -75,7 +96,7 @@ function quotaAll(subs, cls = "", max = Infinity) {
   if (all.accounts < 2 || !all.windows.length) return null;
   const box = el("div", "quota-all" + (cls ? " " + cls : ""));
   const lead = el("span", "quota-all-head", t("All {n} accounts", { n: subs.length }));
-  lead.title = t("These accounts' windows together: amounts of one unit are added up; a window said only as a share is the mean of the accounts on one plan, which have the same allowance. Each account is below.");
+  lead.title = quotaAllHint();
   box.append(lead);
   const ws = familyWindows(all.windows);
   for (const w of ws.slice(0, max)) {
@@ -106,4 +127,6 @@ function quotaAll(subs, cls = "", max = Infinity) {
   return box;
 }
 window.mergeQuotas = mergeQuotas;
+window.quotaAllSummary = quotaAllSummary;
+window.quotaAllHint = quotaAllHint;
 window.quotaAll = quotaAll;

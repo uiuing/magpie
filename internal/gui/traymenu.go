@@ -39,6 +39,20 @@ var trayZh = map[string]string{
 	"%s tokens (%s)":                      "%s token（%s）",
 	"Today: no requests yet":              "今天：还没有请求",
 	"Today: %s":                           "今天：%s",
+	// the menu bar's cell of a plan's accounts together (trayall.go)
+	"All %d accounts":                       "全部 %d 个账号",
+	"%d accounts read":                      "已读取 %d 个账号",
+	"%d account read":                       "已读取 %d 个账号",
+	"Some accounts not counted":             "部分账号未计入",
+	"Includes earlier readings":             "含之前的读数",
+	"%d expired readings left out":          "%d 个过期读数未计入",
+	"%d expired reading left out":           "%d 个过期读数未计入",
+	"%d held by a longer window: none left": "%d 个受更长周期限制，按无剩余计",
+	"first reset in %s":                     "最早在 %s 后重置",
+	"%d couldn't be read: left out":         "%d 个读取失败，未计入",
+	"%d accounts use earlier readings":      "%d 个账号使用之前的读数",
+	"%d account uses earlier readings":      "%d 个账号使用之前的读数",
+	"No comparable allowance reported":      "没有可汇总的额度读数",
 }
 
 // trayZhTW is the tray menu in Traditional Chinese, with Taiwan's words.
@@ -71,6 +85,20 @@ var trayZhTW = map[string]string{
 	"%s tokens (%s)":                      "%s token（%s）",
 	"Today: no requests yet":              "今天：還沒有請求",
 	"Today: %s":                           "今天：%s",
+	// the menu bar's cell of a plan's accounts together (trayall.go)
+	"All %d accounts":                       "全部 %d 個帳號",
+	"%d accounts read":                      "已讀取 %d 個帳號",
+	"%d account read":                       "已讀取 %d 個帳號",
+	"Some accounts not counted":             "部分帳號未計入",
+	"Includes earlier readings":             "含先前的讀數",
+	"%d expired readings left out":          "%d 個過期讀數未計入",
+	"%d expired reading left out":           "%d 個過期讀數未計入",
+	"%d held by a longer window: none left": "%d 個受更長週期限制，按無剩餘計",
+	"first reset in %s":                     "最早在 %s 後重設",
+	"%d couldn't be read: left out":         "%d 個讀取失敗，未計入",
+	"%d accounts use earlier readings":      "%d 個帳號使用先前的讀數",
+	"%d account uses earlier readings":      "%d 個帳號使用先前的讀數",
+	"No comparable allowance reported":      "沒有可彙總的額度讀數",
 }
 
 // trayJa is the tray menu in Japanese.
@@ -103,6 +131,20 @@ var trayJa = map[string]string{
 	"%s tokens (%s)":                      "%s トークン（%s）",
 	"Today: no requests yet":              "今日：まだリクエストはありません",
 	"Today: %s":                           "今日：%s",
+	// the menu bar's cell of a plan's accounts together (trayall.go)
+	"All %d accounts":                       "全 %d アカウント",
+	"%d accounts read":                      "%d アカウントを取得",
+	"%d account read":                       "%d アカウントを取得",
+	"Some accounts not counted":             "一部のアカウントは未集計",
+	"Includes earlier readings":             "以前の値を含む",
+	"%d expired readings left out":          "期限切れの %d 件を除外",
+	"%d expired reading left out":           "期限切れの %d 件を除外",
+	"%d held by a longer window: none left": "%d 件は長い枠の制限により残りなし",
+	"first reset in %s":                     "最初のリセットまで %s",
+	"%d couldn't be read: left out":         "%d 件は取得できず除外",
+	"%d accounts use earlier readings":      "%d アカウントは以前の値を使用",
+	"%d account uses earlier readings":      "%d アカウントは以前の値を使用",
+	"No comparable allowance reported":      "集計可能な利用枠の値がありません",
 }
 
 // trayDe is the tray menu in German.
@@ -135,6 +177,20 @@ var trayDe = map[string]string{
 	"%s tokens (%s)":                      "%s Token (%s)",
 	"Today: no requests yet":              "Heute: noch keine Anfragen",
 	"Today: %s":                           "Heute: %s",
+	// the menu bar's cell of a plan's accounts together (trayall.go)
+	"All %d accounts":                       "Alle %d Konten",
+	"%d accounts read":                      "%d Konten gelesen",
+	"%d account read":                       "%d Konto gelesen",
+	"Some accounts not counted":             "Nicht alle Konten gezählt",
+	"Includes earlier readings":             "Mit früheren Werten",
+	"%d expired readings left out":          "%d abgelaufene Werte ausgelassen",
+	"%d expired reading left out":           "%d abgelaufener Wert ausgelassen",
+	"%d held by a longer window: none left": "%d durch ein längeres Fenster gesperrt: kein Rest",
+	"first reset in %s":                     "früheste Zurücksetzung in %s",
+	"%d couldn't be read: left out":         "%d nicht lesbar: ausgelassen",
+	"%d accounts use earlier readings":      "%d Konten mit früheren Werten",
+	"%d account uses earlier readings":      "%d Konto mit früheren Werten",
+	"No comparable allowance reported":      "Keine vergleichbaren Kontingentwerte gemeldet",
 }
 
 // trayWords are the tray menu's and the tray icon's tooltip's

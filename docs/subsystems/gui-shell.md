@@ -268,6 +268,46 @@ There is no switch: it is additive, and the figure follows used or left
 with the rest. See `usage-merge.test.cjs` (the merge) and
 `usage-all-accounts.test.cjs` (the three places).
 
+The menu bar can show it too, as one cell. Settings' allowance picker
+(`traypick.js`, which app.js imports when Settings draws it, with
+`quotaall.js`) offers **All N accounts** for a provider whose accounts
+are all on one named plan, two of them read, with a window two report
+(`quotaAllSummary`). It counts the accounts the panel's strip counts
+(`quotaAccounts`): a balance alone is set apart, as the panel sets it
+apart, an unread account is one of them, and two keys of one name are
+two. The pick names the plan, `all:<provider>|<plan>` in `TrayUsages`,
+so a provider with mixed or unnamed plans has none, though its strip is
+drawn as above. An account whose read failed before it said its plan
+(Codex's expired token) is one of the plan's, unread. A pick whose plan
+is now mixed, or down to one account, stays in the picker to untick, and
+is kept when another is ticked; the menu bar leaves it out until it is
+eligible again. Opening the picker writes nothing.
+
+The cell is drawn by [`trayall.go`](../../internal/gui/trayall.go) from
+the cards an account's cell reads (`provider.Quotas`, as the Usage page
+has them), so picking it asks a vendor nothing an account's pick
+doesn't. `mergeQuotaAccounts` is `mergeQuotas` in Go, and both run
+`testdata/quota-all.json` and `testdata/quota-all-eligibility.json`. Its
+rows are the windows an account's cell shows unpicked (`trayWindows`),
+the shortest first, two at most, or a balance or an unlimited allowance
+when that is all there is; the windows picked for the provider's
+accounts (`TrayWindows`) are theirs alone. Readings of one window that
+don't add up (two units) show "—", each its own line in the tooltip. The
+tooltip starts with the provider's name, as an account's does (the cell's
+letter, with no logo, is that name's), and a reading left out, unread or
+earlier is said on the line under it; where the cell's is Windows' icon
+figure, its tooltip goes before the other cards' (`trayFigureTip`: Windows
+cuts a tooltip at 127 characters). Its words are in magpie's language as
+an account's tooltip's are (`trayText`, the words in `traymenu.go`), and
+a window's name and unit as the card says them (`trayWindowName`,
+`pageWord`). No common reset or Pace is inferred.
+Clicking the cell opens the panel at the provider's strip, a hidden
+group shown for the while, and unfolds no account. The strip alone is
+lit, in its own corners (a group has none); with no strip to draw, as
+when a read failed since the cell was drawn, the group's first card is.
+See `trayall_test.go`, `trayplan_test.go`, `trayall_edges_test.go` and
+`tray-all-accounts.test.cjs`.
+
 ### The Sessions page's folders
 
 The Sessions page lists an agent's project folders as one list, newest

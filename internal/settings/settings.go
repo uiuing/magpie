@@ -526,8 +526,10 @@ type Settings struct {
 	// Only while magpie can search for it (gateway.magpieSearches).
 	SearchAll bool `json:"searchAll,omitempty"`
 	// TrayUsages are the subscriptions and plans whose windows are shown
-	// beside the tray icon, in the order shown, each by its provider and
-	// account ("claude|a@b.c"); none when empty.
+	// beside the tray icon, in the order shown: a provider and account
+	// ("claude|a@b.c"), its account in use ("claude|*"), a plan's accounts
+	// together ("all:claude|pro"), or a ledger total ("usage:today"); none
+	// when empty.
 	TrayUsages []string `json:"trayUsages,omitempty"`
 	// TrayUsage is TrayUsages' first, all a magpie before them read: a file
 	// with it and no TrayUsages shows that one, and it is kept written for

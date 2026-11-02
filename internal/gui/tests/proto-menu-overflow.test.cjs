@@ -90,7 +90,7 @@ for (const engine of (process.env.BROWSER ? [process.env.BROWSER] : ["chromium",
       const menu = page.locator(".proto-menu");
       const items = page.locator(".proto-menu .pm-item");
       await items.first().waitFor();
-      assert.equal(await items.count(), N + 4, "off, the account in use, each account, then magpie's own two totals (#1984)");
+      assert.equal(await items.count(), N + 5, "off, all accounts, the account in use, each account, then magpie's own two totals (#1984)");
 
       // the menu is clamped to the viewport, not grown past its bottom edge.
       const box = await menu.boundingBox();
@@ -101,7 +101,7 @@ for (const engine of (process.env.BROWSER ? [process.env.BROWSER] : ["chromium",
       // it overflows and scrolls to the last account, which a click picks.
       const overflows = await menu.evaluate((e) => e.scrollHeight > e.clientHeight);
       assert.ok(overflows, "with this many accounts the menu must be scrollable");
-      const last = items.nth(N + 1);
+      const last = items.nth(N + 2);
       await last.scrollIntoViewIfNeeded();
       const scrolled = await menu.evaluate((e) => e.scrollTop > 0);
       assert.ok(scrolled, "scrolling the menu moves it, so the last rows are reachable");

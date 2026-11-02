@@ -1,0 +1,102 @@
+[
+  {
+    "name": "one plan's shares and independent reset times",
+    "minimum": 1,
+    "cards": [
+      {"plan":"Pro","windows":[{"name":"5 hours","used":20,"resetsAt":"2026-11-02T13:00:00Z"}]},
+      {"plan":"Pro","windows":[{"name":"5 hours","used":60,"resetsAt":"2026-11-02T14:00:00Z"}]},
+      {"plan":"Pro","error":"unavailable","windows":[]}
+    ],
+    "accounts":2,"unknown":1,
+    "windows":[{"name":"5 hours","used":40,"accounts":2,"unknown":0,"held":0,"how":"p","firstReset":"2026-11-02T13:00:00Z"}]
+  },
+  {
+    "name":"counts are weighted by their limits",
+    "minimum":1,
+    "cards":[
+      {"plan":"Small","windows":[{"name":"Credits","amount":50,"limit":100,"balance":12,"unit":"credits"}]},
+      {"plan":"Large","windows":[{"name":"Credits","amount":50,"limit":300,"unit":"credits"}]}
+    ],
+    "accounts":2,"unknown":0,
+    "windows":[{"name":"Credits","amount":100,"limit":400,"used":25,"unit":"credits","accounts":2,"how":"c"}]
+  },
+  {
+    "name":"a minimum of one keeps each plan separate",
+    "minimum":1,
+    "cards":[
+      {"plan":"Plus","windows":[{"name":"5 hours","used":40}]},
+      {"plan":"Pro","windows":[{"name":"5 hours","used":10}]}
+    ],
+    "accounts":2,"unknown":0,
+    "windows":[{"plan":"Plus","used":40,"accounts":1,"how":"p"},{"plan":"Pro","used":10,"accounts":1,"how":"p"}]
+  },
+  {
+    "name":"pages still omit a lone member of each plan",
+    "minimum":2,
+    "cards":[
+      {"plan":"Plus","windows":[{"name":"5 hours","used":40}]},
+      {"plan":"Pro","windows":[{"name":"5 hours","used":10}]}
+    ],
+    "accounts":2,"unknown":0,"windows":[]
+  },
+  {
+    "name":"expired stand-in is unknown and one good reading survives",
+    "minimum":1,
+    "cards":[
+      {"plan":"Pro","windows":[{"name":"5 hours","used":20,"resetsAt":"2026-11-02T13:00:00Z"}]},
+      {"plan":"Pro","asOf":"2026-11-02T08:00:00Z","windows":[{"name":"5 hours","used":90,"resetsAt":"2026-11-02T11:00:00Z"}]}
+    ],
+    "accounts":2,"unknown":0,
+    "windows":[{"used":20,"accounts":1,"unknown":1,"how":"p"}]
+  },
+  {
+    "name":"a window held by a longer one contributes no remainder",
+    "minimum":1,
+    "cards":[
+      {"plan":"Pro","windows":[{"name":"5 hours","used":0,"heldBy":"7 days"},{"name":"7 days","used":100}]},
+      {"plan":"Pro","windows":[{"name":"5 hours","used":100},{"name":"7 days","used":78}]}
+    ],
+    "accounts":2,"unknown":0,
+    "windows":[{"name":"5 hours","used":100,"held":1,"accounts":2},{"name":"7 days","used":89,"held":0,"accounts":2}]
+  },
+  {
+    "name":"units, pools and families never mix",
+    "minimum":1,
+    "cards":[
+      {"windows":[{"name":"Weekly","used":10,"pool":"Gemini"},{"name":"Wallet","balance":10,"unit":"USD"},{"name":"Model","used":20,"family":"Claude"}]},
+      {"windows":[{"name":"Weekly","used":90,"pool":"Other"},{"name":"Wallet","balance":20,"unit":"credits"},{"name":"Model","used":80,"family":"Gemini"}]}
+    ],
+    "accounts":2,"unknown":0,
+    "windows":[{"name":"Weekly","pool":"Gemini","used":10},{"name":"Wallet","balance":10,"unit":"USD","how":"b"},{"family":"Claude","used":20},{"pool":"Other","used":90},{"name":"Wallet","balance":20,"unit":"credits","how":"b"},{"family":"Gemini","used":80}]
+  },
+  {
+    "name":"balances add but formatted text does not",
+    "minimum":1,
+    "cards":[
+      {"balance":"$10","windows":[{"name":"Wallet","balance":10,"unit":"USD"},{"name":"Extra","used":100,"text":true}]},
+      {"balance":"$20","windows":[{"name":"Wallet","balance":20,"unit":"USD"},{"name":"Extra","used":100,"text":true}]}
+    ],
+    "accounts":2,"unknown":0,
+    "windows":[{"name":"Wallet","balance":30,"unit":"USD","accounts":2,"how":"b"}]
+  },
+  {
+    "name":"unlimited only when every read account says so",
+    "minimum":1,
+    "cards":[{"windows":[{"name":"Chat","unlimited":true}]},{"windows":[{"name":"Chat","used":30}]}],
+    "accounts":2,"unknown":0,
+    "windows":[{"name":"Chat","used":30,"accounts":1,"how":"p"}]
+  },
+  {
+    "name":"unlimited on both",
+    "minimum":1,
+    "cards":[{"windows":[{"name":"Chat","unlimited":true}]},{"windows":[{"name":"Chat","unlimited":true}]}],
+    "accounts":2,"unknown":0,
+    "windows":[{"name":"Chat","unlimited":true,"accounts":2,"how":"u"}]
+  },
+  {
+    "name":"all failures are unknown",
+    "minimum":1,
+    "cards":[{"error":"offline","windows":[]},{"error":"signed out","windows":[]}],
+    "accounts":0,"unknown":2,"windows":[]
+  }
+]
