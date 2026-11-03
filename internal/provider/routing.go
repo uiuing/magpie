@@ -771,12 +771,40 @@ func UsageRead(agent, user string) (at time.Time, failed, ok bool) {
 	return st.at, st.failed, ok
 }
 
+// readAsked is when ReadUsageNow last asked for each account's usage
+// (agent/user, the user in lower case). A reader with a schedule of its own,
+// Claude Code's /usage (claudeWindows), reads one asked for since it last
+// read it; the others read on the next ask anyway, their readings dropped.
+var readAsked struct {
+	sync.Mutex
+	m map[string]time.Time
+}
+
+func askRead(agent, user string) {
+	readAsked.Lock()
+	defer readAsked.Unlock()
+	if readAsked.m == nil {
+		readAsked.m = map[string]time.Time{}
+	}
+	readAsked.m[agent+"/"+strings.ToLower(user)] = time.Now()
+}
+
+// readAskedAfter says ReadUsageNow asked for agent's user's usage after t.
+func readAskedAfter(agent, user string, t time.Time) bool {
+	readAsked.Lock()
+	defer readAsked.Unlock()
+	at, ok := readAsked.m[agent+"/"+strings.ToLower(user)]
+	return ok && at.After(t)
+}
+
 // ReadUsageNow has agent's accounts users read again now, past the
-// minute their readings are kept and though allowances are read only when
-// asked, and waits, till ctx ends, for a reading begun after it asked. It
-// says whether one came back (UsageRead then tells how it went).
+// minute their readings are kept, though allowances are read only when
+// asked, and past a reader's own schedule (readAsked), and waits, till ctx
+// ends, for a reading begun after it asked. It says whether one came back
+// (UsageRead then tells how it went).
 func ReadUsageNow(ctx context.Context, agent string, users ...string) bool {
 	for _, u := range users {
+		askRead(agent, u)
 		StaleAllowance(agent, u)
 	}
 	c := &usedCache

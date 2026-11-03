@@ -2,7 +2,9 @@ package gateway
 
 import (
 	"context"
+	"net/http/httptest"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -227,6 +229,82 @@ func TestCarefulEveryAccountUnread(t *testing.T) {
 	for _, want := range []string{"rate_limit_error", "couldn't be read", "--careful off"} {
 		if !strings.Contains(body, want) {
 			t.Errorf("no %q in %s", want, body)
+		}
+	}
+}
+
+// One account past its cap, back in three hours, and the other held as
+// its usage couldn't be read: the 429's Retry-After is when magpie reads
+// the unread one again, not the capped one's reset, which Codex slept
+// till for 27.8 hours (#5009). With both past their caps it is the reset.
+func TestCarefulUnreadAsksBackSoon(t *testing.T) {
+	b := carefulPool(t, 95, 10, true)
+	if err := provider.SetAccountCap("codex", "spare@example.com", 90); err != nil {
+		t.Fatal(err)
+	}
+	r := standInReads(t)
+	r.set("me@example.com", time.Now(), false)
+	r.set("spare@example.com", time.Now(), true)
+	post := func() (int, int) {
+		t.Helper()
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest("POST", CodexPath+"/responses", strings.NewReader(`{"model":"gpt-5.5","stream":true,"input":"ping"}`))
+		req.Header.Set("Authorization", "Bearer chatgpt-token")
+		req.Header.Set("chatgpt-account-id", "acct-1")
+		New().Handler().ServeHTTP(rec, req)
+		after, _ := strconv.Atoi(rec.Header().Get("Retry-After"))
+		return rec.Code, after
+	}
+	code, after := post()
+	if tried, _ := b.seen(); code != 429 || tried != "" {
+		t.Fatalf("%d tried %q", code, tried)
+	}
+	if after < 1 || after > int(carefulRetry.Seconds())+1 {
+		t.Fatalf("Retry-After %ds with one account unread, want at most %v", after, carefulRetry)
+	}
+	// both read well, both past their caps: back when the first renews
+	capUsage(t, map[string]float64{"me@example.com": 95, "spare@example.com": 95})
+	r.set("spare@example.com", time.Now(), false)
+	carefulTried.Lock()
+	carefulTried.at = nil
+	carefulTried.Unlock()
+	if code, after = post(); code != 429 || after < int((3*time.Hour-time.Minute).Seconds()) {
+		t.Fatalf("both capped: %d Retry-After %ds, want about 3h", code, after)
+	}
+}
+
+// unreadBack only cuts a wait that was there: one held as unread with a
+// capped one back later, through a key at its spend cap too, comes back
+// at carefulRetry; one back sooner keeps its time; with no time at all
+// (every one unread) the 429 still carries no Retry-After, and with none
+// unread the reset is the wait, as before.
+func TestUnreadBackOnlyShortens(t *testing.T) {
+	now := time.Now()
+	at := func(d time.Duration) *time.Time { t := now.Add(d); return &t }
+	unreadOne := Weighed{Name: "Claude", Who: "b", Capped: 97, Unread: "its usage couldn't be read"}
+	capped := func(d time.Duration) Weighed {
+		return Weighed{Name: "Claude", Who: "a", Capped: 97, Used: 100, CapBack: at(d)}
+	}
+	spent := Weighed{Name: "Relay", Who: "key", Capped: 100, SpendCap: 10, Spent: 12, CapBack: at(20 * 24 * time.Hour)}
+	for _, c := range []struct {
+		name string
+		ws   []Weighed
+		want time.Duration // 0: no Retry-After
+	}{
+		{"capped later, one unread", []Weighed{capped(3 * time.Hour), unreadOne}, carefulRetry},
+		{"capped sooner, one unread", []Weighed{capped(5 * time.Second), unreadOne}, 5 * time.Second},
+		{"every one unread", []Weighed{unreadOne}, 0},
+		{"a spend cap and one unread", []Weighed{spent, unreadOne}, carefulRetry},
+		{"none unread", []Weighed{capped(3 * time.Hour)}, 3 * time.Hour},
+		{"a spend cap, none unread", []Weighed{spent, capped(3 * time.Hour)}, 3 * time.Hour},
+	} {
+		_, back := cappedError("claude-fable-5-1", c.ws, now)
+		got := time.Duration(0)
+		if !back.IsZero() {
+			got = back.Sub(now)
+		}
+		if got != c.want {
+			t.Errorf("%s: wait %v, want %v", c.name, got, c.want)
 		}
 	}
 }

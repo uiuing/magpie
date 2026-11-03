@@ -811,7 +811,8 @@ func AskUsage() {
 // since. A saved
 // account is read only when its card is refreshed (savedRefresh), or when
 // the switch off a spent account has no reading of it (spareRead), or
-// when the keep-alive runs Claude Code on it (keepingAlive), by
+// when the keep-alive runs Claude Code on it (keepingAlive), or when a
+// careful provider holds it as unread (readAsked), by
 // Claude Code run in the account's own config directory
 // (readSavedClaudeUsage), Claude Code's own sign-in left as it is (#1630).
 // Any other time it is what was kept.
@@ -841,7 +842,15 @@ func claudeWindows(ctx context.Context, user string, active bool) ([]QuotaWindow
 	if active {
 		alive = nil
 	}
-	read := ((active || savedRefresh(ctx, user)) && due || spare || alive != nil) && (now.Sub(e.tried) >= claudeAskFloor || alive != nil) && !holding(ctx)
+	// and one a careful provider holds as it can't tell its usage
+	// (ReadUsageNow, readAsked, plugins#349), saved or not, as its card's
+	// refresh would read it: after a restart nothing of it is read yet, and
+	// the reading kept on disk counts as failed. Only one with no reading:
+	// one read well isn't read again for an ask made while its /usage ran,
+	// and one whose read keeps failing is read again only after a wait, not
+	// on every request it holds
+	again := readAskedAfter("claude", user, e.tried) && (e.ws == nil && e.err == nil || e.err != nil && now.Sub(e.tried) >= e.wait)
+	read := ((active || savedRefresh(ctx, user)) && due || spare || again || alive != nil) && (now.Sub(e.tried) >= claudeAskFloor || alive != nil) && !holding(ctx)
 	c.Lock()
 	// one reading an ask or a wait, its first caller's; the others keep
 	// to it

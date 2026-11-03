@@ -954,7 +954,8 @@ func capHeld(p, acct provider.Provider, model string, now time.Time) *capHold {
 
 // cappedError says why a request for model went nowhere when every account
 // that could take it is held at its usage cap, as the vendor's own refusal
-// would when all are used up; the soonest one is back is the wait.
+// would when all are used up; the soonest one is back is the wait, cut to
+// carefulRetry with one held as its usage can't be told (unreadBack).
 func cappedError(model string, ws []Weighed, now time.Time) (string, time.Time) {
 	held, soonest := heldReasons(ws, now)
 	if spendOnly(ws) {
@@ -974,10 +975,10 @@ func cappedError(model string, ws []Weighed, now time.Time) (string, time.Time) 
 				spends = append(spends, r...)
 			}
 		}
-		return msg + "; and " + strings.Join(spends, "; ") + " (to use it, " + spendAdvice + ")", soonest
+		return msg + "; and " + strings.Join(spends, "; ") + " (to use it, " + spendAdvice + ")", unreadBack(ws, soonest, now)
 	}
 	if unread(ws) {
-		return fmt.Sprintf("usage cap reached: every account that serves %q is held at the usage cap set on it in magpie, or held as its usage can't be told right now — %s. magpie reads it again at the next request and uses it once it is under its cap; %s, or turn off Check usage near the cap (Providers → the provider's accounts, or magpie provider pool <id> --careful off)", model, strings.Join(held, "; "), heldAdvice(capped, noCredits)), soonest
+		return fmt.Sprintf("usage cap reached: every account that serves %q is held at the usage cap set on it in magpie, or held as its usage can't be told right now — %s. magpie reads it again at the next request and uses it once it is under its cap; %s, or turn off Check usage near the cap (Providers → the provider's accounts, or magpie provider pool <id> --careful off)", model, strings.Join(held, "; "), heldAdvice(capped, noCredits)), unreadBack(ws, soonest, now)
 	}
 	switch {
 	case !noCredits:
@@ -986,6 +987,18 @@ func cappedError(model string, ws []Weighed, now time.Time) (string, time.Time) 
 		return fmt.Sprintf("usage limit reached: every account that serves %q has used up its allowance and is set in magpie not to spend its credits — %s. magpie uses it again once that window renews; %s", model, strings.Join(held, "; "), heldAdvice(capped, noCredits)), soonest
 	}
 	return fmt.Sprintf("usage limit reached: every account that serves %q is held by magpie — %s. magpie uses it again once that window renews; %s", model, strings.Join(held, "; "), heldAdvice(capped, noCredits)), soonest
+}
+
+// unreadBack is the wait for ws held, soonest the soonest one is back:
+// with one held as its usage can't be told, read again at the next request,
+// no later than carefulRetry from now, not when a capped one's window
+// renews, which a client that honours Retry-After slept till (#5009). No
+// time stays none: a client with no Retry-After keeps to its own backoff.
+func unreadBack(ws []Weighed, soonest, now time.Time) time.Time {
+	if back := now.Add(carefulRetry); unread(ws) && soonest.After(back) {
+		return back
+	}
+	return soonest
 }
 
 // checkpointCappedError is cappedError for a request whose native
